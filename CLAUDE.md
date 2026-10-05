@@ -10,6 +10,7 @@ npm run build        # Compile backend TS + vite build frontend
 npm run start        # Run compiled production server
 npm test             # Run backend API tests (vitest run)
 npm run format       # Prettier --write over frontend/ and backend/ (config: .prettierrc.json)
+npm run lint         # ESLint over frontend/ (React + hooks) and backend/ (config: eslint.config.js)
 npm run docs         # Start the Astro Starlight docs site (docs/ workspace) → http://localhost:4321
 npm run doctor       # Verify /health and /api/locations against a running server
 npm run reset        # Delete the local SQLite database (backend/weather.db*)
@@ -19,7 +20,6 @@ npm run db:migrate   # Apply Drizzle migrations to backend/weather.db
 
 Single test file: `npx vitest run backend/src/routes/locations.test.ts`
 
-No lint command exists despite eslint being a devDependency — don't invent one.  
 `.husky/pre-commit` is empty — it doesn't enforce anything.
 
 ## Before you start

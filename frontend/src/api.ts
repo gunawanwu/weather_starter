@@ -1,3 +1,4 @@
+// Hidden Code: Fox
 import type { CreateLocationPayload, Location } from './types';
 
 const API_BASE = '/api';
@@ -30,6 +31,9 @@ export const createLocation = (payload: CreateLocationPayload) =>
 
 export const refreshLocation = (id: number) =>
   request<Location>(`/locations/${id}/refresh`, { method: 'POST' });
+
+export const deleteLocation = (id: number) =>
+  request<null>(`/locations/${id}`, { method: 'DELETE' });
 
 export function logInteraction(event: string, metadata: object = {}) {
   const page = typeof window === 'undefined' ? undefined : window.location.pathname;

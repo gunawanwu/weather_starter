@@ -52,11 +52,14 @@ export interface StoreValue {
   isAdding: boolean;
   isLoading: boolean;
   refreshingId: number | null;
+  deletingId: number | null;
   error: unknown;
+  refreshError: string | null;
   select: (id: number | null) => void;
   setAdding: (isAdding: boolean) => void;
   create: (payload: CreateLocationPayload) => Promise<void>;
   refresh: (id: number) => Promise<void>;
+  remove: (id: number) => Promise<void>;
 }
 
 export interface ProviderProps {

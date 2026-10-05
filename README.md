@@ -134,18 +134,21 @@ weather-starter/
 
 ## External API Reference
 
-All endpoints are on `https://api-open.data.gov.sg`. No API key is required for basic usage, but you may hit rate limits during heavy development.
+All endpoints are on `https://api-open.data.gov.sg` except the 4-day forecast, which uses the legacy `https://api.data.gov.sg` base URL. No API key is required for basic usage, but you may hit rate limits during heavy development.
 
-| Endpoint                                       | Docs                                                                                        | Notes                                                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `GET /v2/real-time/api/two-hr-forecast`        | [2-hour Forecast](https://data.gov.sg/datasets/d_3f9e064e25005b0e42969944ccaf2e7a/view)     | Used by this app. Response includes `area_metadata` and area forecasts.                       |
-| `GET /v2/real-time/api/air-temperature`        | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Temperature in Celsius from weather stations.                                                 |
-| `GET /v2/real-time/api/relative-humidity`      | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Humidity percentage from weather stations.                                                    |
-| `GET /v2/real-time/api/rainfall`               | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Rainfall in mm from weather stations.                                                         |
-| `GET /v2/real-time/api/wind-speed`             | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Wind speed in knots from weather stations.                                                    |
-| `GET /v2/real-time/api/wind-direction`         | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Wind direction in degrees from weather stations.                                              |
-| `GET /v1/environment/24-hour-weather-forecast` | [Weather Forecast](https://data.gov.sg/collections/weather-forecast/view)                   | 24-hour forecast broken into time periods. Different response shape from the 2-hour endpoint. |
-| `GET /v1/environment/4-day-weather-forecast`   | [Weather Forecast](https://data.gov.sg/collections/weather-forecast/view)                   | 4-day outlook with temperature ranges and forecast text.                                      |
+| Endpoint                                        | Docs                                                                                        | Notes                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /v2/real-time/api/two-hr-forecast`         | [2-hour Forecast](https://data.gov.sg/datasets/d_3f9e064e25005b0e42969944ccaf2e7a/view)     | Used by this app. Response includes `area_metadata` and area forecasts.                                     |
+| `GET /v2/real-time/api/air-temperature`         | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Temperature in Celsius from weather stations.                                                               |
+| `GET /v2/real-time/api/relative-humidity`       | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Humidity percentage from weather stations.                                                                  |
+| `GET /v2/real-time/api/rainfall`                | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Rainfall in mm from weather stations.                                                                       |
+| `GET /v2/real-time/api/wind-speed`              | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Wind speed in knots from weather stations.                                                                  |
+| `GET /v2/real-time/api/wind-direction`          | [Realtime Weather Readings](https://data.gov.sg/collections/realtime-weather-readings/view) | Wind direction in degrees from weather stations.                                                            |
+| `GET /v2/real-time/api/uv`                      | [UV Index](https://data.gov.sg/datasets?query=uv%20index)                                   | Hourly UV index (island-wide). `records[0].index[0].value` is the current reading.                          |
+| `GET /v2/real-time/api/psi`                     | [PSI](https://data.gov.sg/datasets?query=psi)                                               | PSI by region (`west`, `north`, `central`, `south`, `east`). App reads `psi_twenty_four_hourly`.            |
+| `GET /v2/real-time/api/pm25`                    | [PM2.5](https://data.gov.sg/datasets?query=pm2.5)                                           | PM2.5 by region, same envelope as PSI. App reads `pm25_one_hourly`.                                         |
+| `GET /v2/real-time/api/twenty-four-hr-forecast` | [Weather Forecast](https://data.gov.sg/collections/weather-forecast/view)                   | 24-hour forecast with day high/low and regional periods. Different response shape from the 2-hour endpoint. |
+| `GET /v1/environment/4-day-weather-forecast`    | [Weather Forecast](https://data.gov.sg/collections/weather-forecast/view)                   | Legacy v1 on `https://api.data.gov.sg`. 4-day outlook with temperature ranges and forecast text.            |
 
 Optional API key:
 
@@ -198,13 +201,13 @@ Show temperature, humidity, and rainfall alongside the forecast condition. These
 
 ### 5. Hourly and multi-day forecast
 
-Add a scrollable hourly timeline and a 4-day daily forecast below each location's current conditions. The 24-hour endpoint returns periods by region. The 4-day endpoint returns daily high/low temperature ranges and outlook text. Both are `v1` endpoints with different response shapes from the 2-hour API.
+Add a scrollable hourly timeline and a 4-day daily forecast below each location's current conditions. The 24-hour endpoint returns periods by region. The 4-day endpoint returns daily high/low temperature ranges and outlook text. The 24-hour endpoint is v2; the 4-day endpoint is legacy v1 on a different base URL. Both have different response shapes from the 2-hour API.
 
 | Layer        | What to do                                                                                                            |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
 | Backend      | Add service methods and endpoint(s), such as `GET /api/locations/:id/forecast`                                        |
 | Frontend     | Horizontally scrollable hourly row plus vertical daily list, each showing condition text/icons and temperature ranges |
-| External API | `GET /v1/environment/24-hour-weather-forecast`, `GET /v1/environment/4-day-weather-forecast`                          |
+| External API | `GET /v2/real-time/api/twenty-four-hr-forecast`, `GET /v1/environment/4-day-weather-forecast`                         |
 
 ### 6. Wind and atmospheric readings
 

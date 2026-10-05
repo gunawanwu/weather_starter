@@ -2,11 +2,12 @@ import { useStore, useSelectedLocation } from '../state/store';
 import { LocationIcon, RefreshIcon } from './icons';
 import { HourlyStrip } from './HourlyStrip';
 import { TenDayForecast } from './TenDayForecast';
+import { MapCard } from './MapCard';
 import { TileGrid } from './Tiles';
 import { formatTemperature, formatTime } from './format';
 
 export function Hero() {
-  const { locations, refresh, refreshingId } = useStore();
+  const { locations, refresh, refreshingId, refreshError } = useStore();
   const selected = useSelectedLocation();
 
   if (!selected) {
@@ -63,6 +64,7 @@ export function Hero() {
 
         <HourlyStrip periods={selected.weather?.forecast_periods} />
         <TenDayForecast weather={selected.weather} />
+        <MapCard />
         <TileGrid weather={selected.weather} />
 
         <footer className="mt-2 flex flex-col items-center gap-3 pb-8 text-xs text-white/55">
@@ -75,6 +77,11 @@ export function Hero() {
             <RefreshIcon className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>{isRefreshing ? 'Refreshing…' : 'Refresh'}</span>
           </button>
+          {refreshError && (
+            <p className="rounded-md border border-red-300/30 bg-red-500/15 px-3 py-1.5 text-xs text-red-100">
+              {refreshError}
+            </p>
+          )}
           <p>
             Weather for {area}
             {source ? ` · ${source}` : ''}

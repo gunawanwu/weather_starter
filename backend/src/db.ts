@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { migrate } from 'drizzle-orm/sqlite-proxy/migrator';
 import { locations, type WeatherSnapshot } from './schema.js';
@@ -15,6 +15,13 @@ export interface LocationRecord {
 }
 
 type LocationRow = typeof locations.$inferSelect;
+
+export class DuplicateLocationError extends Error {
+  constructor() {
+    super('Location already exists');
+    this.name = 'DuplicateLocationError';
+  }
+}
 
 const defaultWeather: WeatherSnapshot = {
   condition: 'Not refreshed',
@@ -61,32 +68,27 @@ export async function listLocations(): Promise<LocationRecord[]> {
 }
 
 export async function createLocation(latitude: number, longitude: number): Promise<LocationRecord> {
-  const duplicate = await db
-    .select({ id: locations.id })
-    .from(locations)
-    .where(and(eq(locations.latitude, latitude), eq(locations.longitude, longitude)))
-    .get();
-
-  if (duplicate) {
-    const error = new Error('Location already exists');
-    error.name = 'DuplicateLocationError';
-    throw error;
-  }
-
   const createdAt = new Date().toISOString().slice(0, 19);
   const weather = weatherToColumns(defaultWeather);
-  const row = await db
-    .insert(locations)
-    .values({
-      latitude,
-      longitude,
-      createdAt,
-      ...weather,
-    })
-    .returning()
-    .get();
+  // Rely on the (latitude, longitude) unique index rather than a SELECT pre-check,
+  // so two concurrent creates of the same point can't both pass the check.
+  try {
+    const row = await db
+      .insert(locations)
+      .values({
+        latitude,
+        longitude,
+        createdAt,
+        ...weather,
+      })
+      .returning()
+      .get();
 
-  return rowToRecord(row);
+    return rowToRecord(row);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) throw new DuplicateLocationError();
+    throw error;
+  }
 }
 
 export async function getLocation(id: number): Promise<LocationRecord | null> {
@@ -104,6 +106,15 @@ export async function updateWeather(
   return row ? rowToRecord(row) : null;
 }
 
+export async function deleteLocation(id: number): Promise<boolean> {
+  const deleted = await db
+    .delete(locations)
+    .where(eq(locations.id, id))
+    .returning({ id: locations.id })
+    .all();
+  return deleted.length > 0;
+}
+
 export function closeDatabase(): void {
   sqlite.close();
 }
@@ -111,6 +122,14 @@ export function closeDatabase(): void {
 export async function resetStore(): Promise<void> {
   await db.delete(locations).run();
   sqlite.prepare("DELETE FROM sqlite_sequence WHERE name = 'locations'").run();
+}
+
+// Drizzle may wrap the driver error, so check the cause chain as well.
+function isUniqueConstraintError(error: unknown): boolean {
+  for (let current = error; current instanceof Error; current = current.cause) {
+    if (current.message.includes('UNIQUE constraint failed')) return true;
+  }
+  return false;
 }
 
 function weatherToColumns(weather: WeatherSnapshot) {

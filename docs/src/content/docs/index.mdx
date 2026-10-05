@@ -1,0 +1,51 @@
+---
+title: Weather Starter
+description: Singapore weather dashboard built with Express, React, SQLite and live data.gov.sg data.
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Weather Starter is a Singapore weather dashboard. You add Singapore coordinates, and the app fetches the current conditions, forecasts, wind and air quality for each one from the public [data.gov.sg](https://data.gov.sg) real-time APIs. It stores the result in a local SQLite database.
+
+It is a single npm-workspaces monorepo:
+
+| Workspace   | Stack                                                     |
+| ----------- | --------------------------------------------------------- |
+| `backend/`  | Express 4, Drizzle ORM over `node:sqlite`, pino logging   |
+| `frontend/` | React 18, Vite 7, Tailwind CSS 3, Leaflet / react-leaflet |
+| `docs/`     | This Astro Starlight site                                 |
+
+## System at a glance
+
+```mermaid
+flowchart LR
+    Browser["Browser<br/>React SPA"]
+    subgraph Node["Node process (backend/src/server.ts)"]
+        Express["Express app"]
+        Router["Locations router<br/>/api/locations"]
+        Client["SingaporeWeatherClient"]
+        DB["db.ts<br/>Drizzle + node:sqlite"]
+    end
+    SQLite[("backend/weather.db")]
+    GovSG["data.gov.sg<br/>real-time APIs"]
+    OSM["OpenStreetMap<br/>tile servers"]
+
+    Browser -- "/api/*" --> Express
+    Express --> Router
+    Router --> DB
+    Router -- "create / refresh only" --> Client
+    Client --> GovSG
+    DB --> SQLite
+    Browser -- "map tiles" --> OSM
+```
+
+The browser only talks to the Express server, apart from map tiles, which it loads straight from OpenStreetMap. The server calls data.gov.sg only when a location is **created** or **refreshed**. Every read is served from the stored snapshot.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard title="Getting started" href="/getting-started/" description="Install, run, and the npm scripts." />
+  <LinkCard title="Architecture" href="/architecture/overview/" description="Process model, dev vs production, and the snapshot data flow." />
+  <LinkCard title="Backend" href="/backend/api/" description="HTTP API, weather client, and database." />
+  <LinkCard title="Frontend" href="/frontend/overview/" description="Component tree, state stores, map, and themes." />
+</CardGrid>

@@ -8,12 +8,88 @@ body,
   height: 100%;
 }
 
-body {
-  @apply text-white antialiased;
-  background:
+/* ---------- Theme variables ---------- */
+
+/* apple (default) — steel-blue glassmorphism */
+:root,
+[data-theme='apple'] {
+  --wx-accent: #0284c7;
+  --wx-bg:
     radial-gradient(120% 80% at 70% 0%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
     radial-gradient(90% 70% at 10% 100%, rgba(80, 110, 150, 0.55) 0%, transparent 60%),
     linear-gradient(170deg, #6f8aa8 0%, #5a7591 35%, #4a627c 65%, #3c5066 100%);
+}
+
+/* aurora — near-black with emerald and deep violet */
+[data-theme='aurora'] {
+  --wx-accent: #34d399;
+  --wx-bg:
+    radial-gradient(120% 80% at 70% 0%, rgba(52, 211, 153, 0.14) 0%, transparent 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(109, 40, 217, 0.5) 0%, transparent 60%),
+    linear-gradient(170deg, #0d1b2a 0%, #1a0640 35%, #0a1f30 65%, #071018 100%);
+}
+
+/* sunset — deep wine to burnt orange */
+[data-theme='sunset'] {
+  --wx-accent: #f97316;
+  --wx-bg:
+    radial-gradient(120% 80% at 70% 0%, rgba(251, 191, 36, 0.18) 0%, transparent 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(124, 29, 74, 0.65) 0%, transparent 60%),
+    linear-gradient(170deg, #7c1d4a 0%, #9a2a30 35%, #c24a1a 65%, #b84010 100%);
+}
+
+/* ocean — dark navy to midnight blue */
+[data-theme='ocean'] {
+  --wx-accent: #38bdf8;
+  --wx-bg:
+    radial-gradient(120% 80% at 70% 0%, rgba(56, 189, 248, 0.14) 0%, transparent 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(2, 62, 138, 0.7) 0%, transparent 60%),
+    linear-gradient(170deg, #03071e 0%, #023e8a 35%, #0077b6 65%, #005a8e 100%);
+}
+
+/* forest — dark charcoal to deep green */
+[data-theme='forest'] {
+  --wx-accent: #4ade80;
+  --wx-bg:
+    radial-gradient(120% 80% at 70% 0%, rgba(74, 222, 128, 0.12) 0%, transparent 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(20, 83, 45, 0.7) 0%, transparent 60%),
+    linear-gradient(170deg, #0d1a0f 0%, #1a3a1e 35%, #2d5c3f 65%, #1a3a1e 100%);
+}
+
+/* midnight — near-black monochrome */
+[data-theme='midnight'] {
+  --wx-accent: #94a3b8;
+  --wx-bg:
+    radial-gradient(120% 80% at 70% 0%, rgba(148, 163, 184, 0.07) 0%, transparent 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(15, 23, 42, 0.9) 0%, transparent 60%),
+    linear-gradient(170deg, #0f0f0f 0%, #1a1a1a 35%, #212121 65%, #1a1a1a 100%);
+}
+
+/* storm — near-black with electric yellow lightning and cold storm-blue */
+[data-theme='storm'] {
+  --wx-accent: #fbbf24;
+  --wx-bg:
+    radial-gradient(90% 45% at 85% 8%, rgba(251, 191, 36, 0.14) 0%, transparent 50%),
+    radial-gradient(80% 55% at 12% 88%, rgba(96, 165, 250, 0.22) 0%, transparent 55%),
+    radial-gradient(60% 40% at 50% 50%, rgba(20, 26, 40, 0.6) 0%, transparent 70%),
+    linear-gradient(170deg, #0e1018 0%, #141820 35%, #111420 65%, #0c0e18 100%);
+}
+
+/* tropical-storm — near-black, heavy grey-blue clouds, muted yellow highlight */
+[data-theme='tropical-storm'] {
+  --wx-accent: #fbbf24;
+  --wx-bg:
+    radial-gradient(70% 50% at 75% 10%, rgba(251, 191, 36, 0.10) 0%, transparent 50%),
+    radial-gradient(110% 70% at 15% 85%, rgba(100, 130, 170, 0.40) 0%, transparent 60%),
+    radial-gradient(80% 55% at 50% 42%, rgba(75, 95, 130, 0.20) 0%, transparent 70%),
+    linear-gradient(170deg, #111318 0%, #161b24 35%, #1a2030 65%, #0e1118 100%);
+}
+
+/* ---------- Base ---------- */
+
+body {
+  @apply text-white antialiased;
+  background: var(--wx-bg);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
@@ -40,4 +116,125 @@ input:focus-visible {
 
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ---------- Weather map (Leaflet) ---------- */
+.wx-map .leaflet-container {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  /* Close to OSM's own paper tone, so tiles fade in rather than flashing dark. */
+  background: #e8e4dd;
+  font-family: inherit;
+}
+
+.wx-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.78);
+  color: rgba(15, 23, 42, 0.65);
+  font-size: 10px;
+}
+
+.wx-map .leaflet-control-attribution a {
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.wx-map .leaflet-control-zoom a {
+  background: rgba(20, 28, 38, 0.72);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.wx-map .leaflet-control-zoom a:hover {
+  background: rgba(30, 42, 56, 0.85);
+}
+
+/* Pin. The icon box (72x44) is larger than the visible pill, so hits are
+   restricted to the pill and dot -- otherwise nearby pins steal each other's
+   clicks. Events from these children still bubble to Leaflet's listener. */
+.wx-pin-icon {
+  background: none;
+  border: 0;
+  pointer-events: none;
+}
+
+.wx-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.wx-pin__label {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(18, 28, 40, 0.66);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.wx-pin__glyph,
+.wx-pin__glyph svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.wx-pin__glyph {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.wx-pin__dot {
+  pointer-events: auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid rgba(18, 28, 40, 0.75);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.wx-pin--interactive .wx-pin__label,
+.wx-pin--interactive .wx-pin__dot {
+  cursor: pointer;
+}
+
+.wx-pin--interactive .wx-pin__label:hover {
+  background: rgba(30, 44, 60, 0.8);
+}
+
+/* Selected pin uses the theme accent so it pops against the light OSM basemap. */
+.wx-pin--selected .wx-pin__label {
+  background: var(--wx-accent, #0284c7);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--wx-accent, #0284c7) 50%, transparent);
+  transform: scale(1.06);
+}
+
+.wx-pin--selected .wx-pin__glyph {
+  color: #fff;
+}
+
+.wx-pin--selected .wx-pin__dot {
+  background: var(--wx-accent, #0284c7);
+  border-color: #fff;
+}
+
+.leaflet-marker-icon:focus-visible .wx-pin__label {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
 }

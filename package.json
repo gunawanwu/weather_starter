@@ -8,6 +8,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "npm run build -w frontend && tsc -p backend/tsconfig.json",
     "start": "node scripts/start.mjs",
+    "docs": "npm run dev -w docs",
     "doctor": "node scripts/doctor.mjs",
     "reset": "node scripts/reset.mjs",
     "test": "vitest run",
@@ -18,7 +19,8 @@
   },
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "docs"
   ],
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.4",

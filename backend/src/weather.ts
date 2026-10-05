@@ -181,10 +181,51 @@ export class SingaporeWeatherClient {
   ) {}
 
   async getCurrentWeather(latitude: number, longitude: number): Promise<WeatherSnapshot> {
-    const forecastPayload = await this.fetchLatestForecastPayload().catch(() => null);
-    return forecastPayload
-      ? this.snapshotFromPayload(forecastPayload, latitude, longitude)
-      : this.emptyForecastSnapshot();
+    // The provider's anonymous quota only reliably covers ~6 requests per refresh
+    // (confirmed empirically: requests 7+ come back 429 regardless of spacing, and
+    // recovery takes 30-60s). Batches are ordered by priority so the condition card
+    // (current temperature, condition, and forecast high/low) lands within that
+    // budget; lower-priority tiles are more likely to degrade to null. Each source
+    // degrades independently, so one failing endpoint never blanks the rest.
+    const [forecastPayload, twentyFourHour, temperature] = await Promise.all([
+      this.fetchLatestForecastPayload().catch(() => null),
+      this.fetchTwentyFourHourForecast(latitude, longitude).catch(() => null),
+      this.fetchNearestReading('air-temperature', latitude, longitude).catch(() => null),
+    ]);
+
+    const [humidity, rainfall, windSpeed] = await Promise.all([
+      this.fetchNearestReading('relative-humidity', latitude, longitude).catch(() => null),
+      this.fetchNearestReading('rainfall', latitude, longitude).catch(() => null),
+      this.fetchNearestReading('wind-speed', latitude, longitude).catch(() => null),
+    ]);
+
+    const [windDirection, uv, fourDay] = await Promise.all([
+      this.fetchNearestReading('wind-direction', latitude, longitude).catch(() => null),
+      this.fetchUvIndex().catch(() => null),
+      this.fetchFourDayForecast().catch(() => null),
+    ]);
+
+    // Air quality is two upstream requests of its own, so it gets its own batch.
+    const airQuality = await this.fetchAirQuality(latitude, longitude).catch(() => null);
+
+    const base = this.baseSnapshot(forecastPayload, latitude, longitude);
+
+    return {
+      ...base,
+      temperature_c: temperature?.value ?? null,
+      humidity_percent: humidity?.value ?? null,
+      rainfall_mm: rainfall?.value ?? null,
+      wind_speed_knots: windSpeed?.value ?? null,
+      wind_direction_degrees: windDirection?.value ?? null,
+      forecast_low_c: twentyFourHour?.low ?? null,
+      forecast_high_c: twentyFourHour?.high ?? null,
+      uv_index: uv?.value ?? null,
+      psi_twenty_four_hourly: airQuality?.psi ?? null,
+      pm25_one_hourly: airQuality?.pm25 ?? null,
+      air_quality_region: airQuality?.region ?? null,
+      forecast_periods: twentyFourHour?.periods ?? [],
+      daily_forecast: fourDay?.days ?? [],
+    };
   }
 
   async fetchLatestForecastPayload(): Promise<ForecastPayload> {
@@ -341,7 +382,7 @@ export class SingaporeWeatherClient {
     return 'https://api.data.gov.sg';
   }
 
-  private async fetchJson<T>(url: string): Promise<T> {
+  private async fetchJson<T>(url: string, attempt = 0): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.options.timeoutMs ?? 8000);
 
@@ -357,6 +398,10 @@ export class SingaporeWeatherClient {
 
       if (!response.ok) {
         if (response.status === 429) {
+          if (attempt < 2) {
+            await delay(400 * (attempt + 1));
+            return this.fetchJson<T>(url, attempt + 1);
+          }
           throw new WeatherProviderError('Weather provider rate limit reached (HTTP 429)');
         }
         if (response.status === 401 || response.status === 403) {
@@ -449,6 +494,22 @@ export class SingaporeWeatherClient {
     };
   }
 
+  // A malformed two-hour forecast (error code, no items, no area forecasts) must
+  // degrade like a failed fetch rather than throw and discard every other field.
+  private baseSnapshot(
+    payload: ForecastPayload | null,
+    latitude: number,
+    longitude: number,
+  ): WeatherSnapshot {
+    if (!payload) return this.emptyForecastSnapshot();
+    try {
+      return this.snapshotFromPayload(payload, latitude, longitude);
+    } catch (error) {
+      if (error instanceof WeatherProviderError) return this.emptyForecastSnapshot();
+      throw error;
+    }
+  }
+
   private emptyForecastSnapshot(): WeatherSnapshot {
     return {
       condition: 'Unavailable',
@@ -471,6 +532,10 @@ export class SingaporeWeatherClient {
       daily_forecast: [],
     };
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function nearestAreaName(

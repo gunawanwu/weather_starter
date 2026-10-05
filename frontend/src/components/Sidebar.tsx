@@ -3,9 +3,10 @@ import { useStore } from '../state/store';
 import { SearchIcon } from './icons';
 import { SidebarCard } from './SidebarCard';
 import { AddLocationForm } from './AddLocationForm';
+import { UseMyLocationButton } from './UseMyLocationButton';
 
 export function Sidebar() {
-  const { locations, isLoading } = useStore();
+  const { locations, isLoading, isAdding } = useStore();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -31,7 +32,14 @@ export function Sidebar() {
         />
       </div>
 
-      <AddLocationForm />
+      {isAdding ? (
+        <AddLocationForm />
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <AddLocationForm />
+          <UseMyLocationButton />
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 overflow-y-auto pr-1">
         {isLoading && locations.length === 0 ? (

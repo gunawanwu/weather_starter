@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import {
   listLocations,
   createLocation,
+  getNearestArea,
   refreshLocation,
   deleteLocation,
   logInteraction,
@@ -17,6 +18,7 @@ export function StoreProvider({ children }: ProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshingId, setRefreshingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
@@ -73,6 +75,24 @@ export function StoreProvider({ children }: ProviderProps) {
     },
     [load],
   );
+
+  // Only the forecast area's label coordinates leave this function: the raw
+  // browser position is never sent to create, stored, or logged.
+  const locate = useCallback(async () => {
+    setIsLocating(true);
+    setError(null);
+    logInteraction('location_geolocate_clicked');
+    try {
+      const position = await currentPosition();
+      const area = await getNearestArea(position.coords.latitude, position.coords.longitude);
+      logInteraction('location_geolocate_resolved', area);
+      await create({ latitude: area.latitude, longitude: area.longitude });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLocating(false);
+    }
+  }, [create]);
 
   const refresh = useCallback(
     async (id: number) => {
@@ -135,12 +155,25 @@ export function StoreProvider({ children }: ProviderProps) {
       setIsAdding(nextIsAdding);
       if (nextIsAdding) logInteraction('location_form_opened');
     },
+    isLocating,
     create,
+    locate,
     refresh,
     remove,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+// Standard precision is plenty for a km-scale forecast area.
+function currentPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      timeout: 10_000,
+      maximumAge: 5 * 60_000,
+    });
+  });
 }
 
 export function useStore() {

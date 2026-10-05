@@ -8,12 +8,18 @@ import {
   listLocations,
   updateWeather,
 } from '../db.js';
-import { SingaporeWeatherClient, WeatherProviderError, type WeatherSnapshot } from '../weather.js';
+import {
+  SingaporeWeatherClient,
+  WeatherProviderError,
+  type ForecastArea,
+  type WeatherSnapshot,
+} from '../weather.js';
 import type { WeatherSnapshot as StoredWeatherSnapshot } from '../schema.js';
 import { logger } from '../logger.js';
 
 export interface WeatherClient {
   getCurrentWeather(latitude: number, longitude: number): Promise<WeatherSnapshot>;
+  getNearestArea(latitude: number, longitude: number): Promise<ForecastArea>;
 }
 
 interface LocationsRouterOptions {
@@ -33,21 +39,40 @@ export function createLocationsRouter(options: LocationsRouterOptions = {}): Rou
     }
   });
 
+  router.get('/areas/nearest', async (request, response, next) => {
+    try {
+      const coordinates = parseSingaporeCoordinates(
+        request.query.latitude,
+        request.query.longitude,
+      );
+      if ('detail' in coordinates) {
+        response.status(422).json(coordinates);
+        return;
+      }
+
+      response.json(
+        await weatherClient.getNearestArea(coordinates.latitude, coordinates.longitude),
+      );
+    } catch (error) {
+      if (error instanceof WeatherProviderError) {
+        response.status(502).json({ detail: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
+
   router.post('/locations', async (request, response, next) => {
     try {
-      const latitude = Number(request.body?.latitude);
-      const longitude = Number(request.body?.longitude);
-
-      if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-        response.status(422).json({ detail: 'latitude and longitude are required' });
+      const coordinates = parseSingaporeCoordinates(
+        request.body?.latitude,
+        request.body?.longitude,
+      );
+      if ('detail' in coordinates) {
+        response.status(422).json(coordinates);
         return;
       }
-      if (!(1.1 <= latitude && latitude <= 1.5 && 103.6 <= longitude && longitude <= 104.1)) {
-        response.status(422).json({
-          detail: 'Coordinates must be within Singapore (lat 1.1-1.5, lon 103.6-104.1)',
-        });
-        return;
-      }
+      const { latitude, longitude } = coordinates;
 
       const location = await createLocation(latitude, longitude);
 
@@ -131,6 +156,26 @@ export function createLocationsRouter(options: LocationsRouterOptions = {}): Rou
   });
 
   return router;
+}
+
+// The bounding box also covers Johor Bahru and the northern edge of Batam, so a
+// position there resolves to the nearest Singapore area rather than an error.
+// Accepted limitation: an accurate boundary polygon isn't worth the data.
+function parseSingaporeCoordinates(
+  rawLatitude: unknown,
+  rawLongitude: unknown,
+): { latitude: number; longitude: number } | { detail: string } {
+  // Number('') is 0, so treat empty or missing values as absent before converting.
+  const latitude = rawLatitude === undefined || rawLatitude === '' ? NaN : Number(rawLatitude);
+  const longitude = rawLongitude === undefined || rawLongitude === '' ? NaN : Number(rawLongitude);
+
+  if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+    return { detail: 'latitude and longitude are required' };
+  }
+  if (!(1.1 <= latitude && latitude <= 1.5 && 103.6 <= longitude && longitude <= 104.1)) {
+    return { detail: 'Coordinates must be within Singapore (lat 1.1-1.5, lon 103.6-104.1)' };
+  }
+  return { latitude, longitude };
 }
 
 // The provider's anonymous rate limit means any single field can transiently fail

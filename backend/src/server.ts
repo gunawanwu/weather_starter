@@ -22,7 +22,7 @@ export async function createApp(options: AppOptions = {}) {
   const enableRequestLogging = options.enableRequestLogging ?? process.env.NODE_ENV !== 'test';
 
   if (enableRequestLogging) {
-    app.use(pinoHttp({ logger }));
+    app.use(pinoHttp({ logger, serializers: { req: redactRawPosition } }));
   }
 
   app.use(express.json());
@@ -83,6 +83,13 @@ export async function createApp(options: AppOptions = {}) {
   );
 
   return app;
+}
+
+// The nearest-area lookup is the one request that carries the user's raw browser
+// position. Keep it out of the request log; only snapped area points are logged.
+function redactRawPosition(req: { url?: string; query?: unknown }) {
+  if (!req.url?.startsWith('/api/areas/nearest')) return req;
+  return { ...req, url: '/api/areas/nearest', query: '[redacted]' };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

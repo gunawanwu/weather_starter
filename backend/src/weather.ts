@@ -149,6 +149,12 @@ export interface DailyForecast {
   temperature_high_c: number | null;
 }
 
+export interface ForecastArea {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface WeatherSnapshot {
   condition: string;
   observed_at: string;
@@ -226,6 +232,22 @@ export class SingaporeWeatherClient {
       forecast_periods: twentyFourHour?.periods ?? [],
       daily_forecast: fourDay?.days ?? [],
     };
+  }
+
+  // Resolves to the forecast area's official label location, not the caller's
+  // coordinates, so repeat lookups from the same area return identical points.
+  async getNearestArea(latitude: number, longitude: number): Promise<ForecastArea> {
+    const payload = await this.fetchLatestForecastPayload();
+    if (payload.code !== undefined && payload.code !== 0) {
+      throw new WeatherProviderError(payload.errorMsg ?? 'Weather provider returned an error');
+    }
+
+    const root = payload.data ?? payload;
+    const area = nearestArea(root.area_metadata ?? [], latitude, longitude);
+    if (!area) {
+      throw new WeatherProviderError('Forecast response has no area metadata');
+    }
+    return area;
   }
 
   async fetchLatestForecastPayload(): Promise<ForecastPayload> {
@@ -447,13 +469,13 @@ export class SingaporeWeatherClient {
         .map((entry) => [entry.area as string, entry.forecast as string]),
     );
 
-    const nearestArea = nearestAreaName(areaMetadata, latitude, longitude);
-    if (nearestArea && forecastByArea.has(nearestArea)) {
+    const nearestAreaName = nearestArea(areaMetadata, latitude, longitude)?.name;
+    if (nearestAreaName && forecastByArea.has(nearestAreaName)) {
       return {
-        condition: forecastByArea.get(nearestArea) as string,
+        condition: forecastByArea.get(nearestAreaName) as string,
         observed_at: latestItem.update_timestamp ?? latestItem.timestamp ?? '',
         source: 'api-open.data.gov.sg',
-        area: nearestArea,
+        area: nearestAreaName,
         valid_period_text: latestItem.valid_period?.text ?? null,
         temperature_c: null,
         humidity_percent: null,
@@ -538,12 +560,12 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function nearestAreaName(
+function nearestArea(
   areaMetadata: AreaMetadata[],
   latitude: number,
   longitude: number,
-): string | null {
-  let nearest: { name: string; distance: number } | null = null;
+): ForecastArea | null {
+  let nearest: { area: ForecastArea; distance: number } | null = null;
 
   for (const area of areaMetadata) {
     const lat = Number(area.label_location?.latitude);
@@ -552,11 +574,11 @@ function nearestAreaName(
 
     const distance = (lat - latitude) ** 2 + (lon - longitude) ** 2;
     if (!nearest || distance < nearest.distance) {
-      nearest = { name: area.name, distance };
+      nearest = { area: { name: area.name, latitude: lat, longitude: lon }, distance };
     }
   }
 
-  return nearest?.name ?? null;
+  return nearest?.area ?? null;
 }
 
 function nearestRegionName(

@@ -46,6 +46,12 @@ export interface CreateLocationPayload {
   longitude: number;
 }
 
+export interface ForecastArea {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface StoreValue {
   locations: Location[];
   selectedId: number | null;
@@ -57,7 +63,9 @@ export interface StoreValue {
   refreshError: string | null;
   select: (id: number | null) => void;
   setAdding: (isAdding: boolean) => void;
+  isLocating: boolean;
   create: (payload: CreateLocationPayload) => Promise<void>;
+  locate: () => Promise<void>;
   refresh: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
 }

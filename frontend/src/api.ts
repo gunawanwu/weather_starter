@@ -1,5 +1,5 @@
 // Hidden Code: Fox
-import type { CreateLocationPayload, Location } from './types';
+import type { CreateLocationPayload, ForecastArea, Location } from './types';
 
 const API_BASE = '/api';
 
@@ -28,6 +28,11 @@ export const listLocations = () => request<LocationsResponse>('/locations');
 
 export const createLocation = (payload: CreateLocationPayload) =>
   request<Location>('/locations', { method: 'POST', body: JSON.stringify(payload) });
+
+export const getNearestArea = (latitude: number, longitude: number) =>
+  request<ForecastArea>(
+    `/areas/nearest?${new URLSearchParams({ latitude: String(latitude), longitude: String(longitude) })}`,
+  );
 
 export const refreshLocation = (id: number) =>
   request<Location>(`/locations/${id}/refresh`, { method: 'POST' });

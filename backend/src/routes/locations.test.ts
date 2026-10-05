@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SingaporeWeatherClient, type WeatherSnapshot } from '../weather.js';
+import {
+  SingaporeWeatherClient,
+  WeatherProviderError,
+  type ForecastArea,
+  type WeatherSnapshot,
+} from '../weather.js';
 
 const weather: WeatherSnapshot = {
   condition: 'Cloudy',
@@ -28,10 +33,31 @@ const weather: WeatherSnapshot = {
   ],
 };
 
+// A subset of the two-hour forecast's area_metadata, with real label locations.
+const forecastPayload = {
+  code: 0,
+  data: {
+    area_metadata: [
+      { name: 'Jurong West', label_location: { latitude: 1.34039, longitude: 103.705 } },
+      { name: 'Jurong East', label_location: { latitude: 1.326, longitude: 103.737 } },
+      { name: 'Bishan', label_location: { latitude: 1.350772, longitude: 103.839 } },
+    ],
+    items: [],
+  },
+};
+
+// The real client's nearest-area lookup, fed a canned forecast payload.
+function realNearestArea(latitude: number, longitude: number): Promise<ForecastArea> {
+  const client = new SingaporeWeatherClient();
+  vi.spyOn(client, 'fetchLatestForecastPayload').mockResolvedValue(forecastPayload as never);
+  return client.getNearestArea(latitude, longitude);
+}
+
 describe('locations API', () => {
   let tempDir: string;
   // Tests can swap this to simulate provider behaviour per request.
   let getCurrentWeather: () => Promise<WeatherSnapshot>;
+  let getNearestArea: (latitude: number, longitude: number) => Promise<ForecastArea>;
   let app: Awaited<ReturnType<typeof import('../server.js').createApp>>;
 
   beforeAll(async () => {
@@ -45,12 +71,14 @@ describe('locations API', () => {
       enableRequestLogging: false,
       weatherClient: {
         getCurrentWeather: () => getCurrentWeather(),
+        getNearestArea: (latitude, longitude) => getNearestArea(latitude, longitude),
       },
     });
   });
 
   beforeEach(() => {
     getCurrentWeather = async () => weather;
+    getNearestArea = realNearestArea;
   });
 
   afterAll(async () => {
@@ -145,6 +173,68 @@ describe('locations API', () => {
       return weather;
     };
     await request(app).post(`/api/locations/${created.body.id}/refresh`).expect(404);
+  });
+
+  describe('GET /api/areas/nearest', () => {
+    it("returns the forecast area's name and label coordinates", async () => {
+      const response = await request(app)
+        .get('/api/areas/nearest')
+        .query({ latitude: 1.3404, longitude: 103.7091 })
+        .expect(200);
+      expect(response.body).toEqual({ name: 'Jurong West', latitude: 1.34039, longitude: 103.705 });
+    });
+
+    it('picks whichever area is nearest', async () => {
+      const response = await request(app)
+        .get('/api/areas/nearest')
+        .query({ latitude: 1.3329, longitude: 103.7436 })
+        .expect(200);
+      expect(response.body).toEqual({ name: 'Jurong East', latitude: 1.326, longitude: 103.737 });
+    });
+
+    it.each([
+      ['missing parameters', {}],
+      ['a missing longitude', { latitude: 1.34 }],
+      ['non-numeric parameters', { latitude: 'abc', longitude: '103.7' }],
+    ])('returns 422 for %s', async (_case, query) => {
+      const response = await request(app).get('/api/areas/nearest').query(query).expect(422);
+      expect(response.body.detail).toEqual(expect.any(String));
+    });
+
+    it('returns 422 for coordinates outside Singapore', async () => {
+      const response = await request(app)
+        .get('/api/areas/nearest')
+        .query({ latitude: 3.139, longitude: 101.6869 })
+        .expect(422);
+      expect(response.body.detail).toMatch(/within Singapore/);
+    });
+
+    it('returns 502 when the weather provider fails', async () => {
+      getNearestArea = async () => {
+        throw new WeatherProviderError('Unable to reach weather provider');
+      };
+      const response = await request(app)
+        .get('/api/areas/nearest')
+        .query({ latitude: 1.34, longitude: 103.7 })
+        .expect(502);
+      expect(response.body).toEqual({ detail: 'Unable to reach weather provider' });
+    });
+
+    it('returns 502 when the provider returns no area metadata', async () => {
+      getNearestArea = (latitude, longitude) => {
+        const client = new SingaporeWeatherClient();
+        vi.spyOn(client, 'fetchLatestForecastPayload').mockResolvedValue({
+          code: 0,
+          data: { area_metadata: [], items: [] },
+        } as never);
+        return client.getNearestArea(latitude, longitude);
+      };
+      const response = await request(app)
+        .get('/api/areas/nearest')
+        .query({ latitude: 1.34, longitude: 103.7 })
+        .expect(502);
+      expect(response.body.detail).toEqual(expect.any(String));
+    });
   });
 });
 

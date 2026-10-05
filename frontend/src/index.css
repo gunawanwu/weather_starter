@@ -79,9 +79,9 @@ body,
 [data-theme='tropical-storm'] {
   --wx-accent: #fbbf24;
   --wx-bg:
-    radial-gradient(70% 50% at 75% 10%, rgba(251, 191, 36, 0.10) 0%, transparent 50%),
-    radial-gradient(110% 70% at 15% 85%, rgba(100, 130, 170, 0.40) 0%, transparent 60%),
-    radial-gradient(80% 55% at 50% 42%, rgba(75, 95, 130, 0.20) 0%, transparent 70%),
+    radial-gradient(70% 50% at 75% 10%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+    radial-gradient(110% 70% at 15% 85%, rgba(100, 130, 170, 0.4) 0%, transparent 60%),
+    radial-gradient(80% 55% at 50% 42%, rgba(75, 95, 130, 0.2) 0%, transparent 70%),
     linear-gradient(170deg, #111318 0%, #161b24 35%, #1a2030 65%, #0e1118 100%);
 }
 

@@ -160,7 +160,8 @@ function mergeWeatherSnapshot(
     psi_twenty_four_hourly: next.psi_twenty_four_hourly ?? previous.psi_twenty_four_hourly,
     pm25_one_hourly: next.pm25_one_hourly ?? previous.pm25_one_hourly,
     air_quality_region: next.air_quality_region ?? previous.air_quality_region,
-    forecast_periods: next.forecast_periods.length > 0 ? next.forecast_periods : previous.forecast_periods,
+    forecast_periods:
+      next.forecast_periods.length > 0 ? next.forecast_periods : previous.forecast_periods,
     daily_forecast: next.daily_forecast.length > 0 ? next.daily_forecast : previous.daily_forecast,
   };
 }

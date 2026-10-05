@@ -23,7 +23,9 @@ const weather: WeatherSnapshot = {
   pm25_one_hourly: 9,
   air_quality_region: 'central',
   forecast_periods: [{ label: 'Now', forecast: 'Cloudy' }],
-  daily_forecast: [{ date: '2026-05-04', forecast: 'Cloudy', temperature_low_c: 25, temperature_high_c: 32 }],
+  daily_forecast: [
+    { date: '2026-05-04', forecast: 'Cloudy', temperature_low_c: 25, temperature_high_c: 32 },
+  ],
 };
 
 describe('locations API', () => {
@@ -89,7 +91,9 @@ describe('locations API', () => {
 
     const listResponse = await request(app).get('/api/locations').expect(200);
     expect(
-      listResponse.body.locations.some((location: { id: number }) => location.id === created.body.id),
+      listResponse.body.locations.some(
+        (location: { id: number }) => location.id === created.body.id,
+      ),
     ).toBe(false);
   });
 
@@ -98,7 +102,10 @@ describe('locations API', () => {
   });
 
   it('returns 409 when creating a duplicate location', async () => {
-    await request(app).post('/api/locations').send({ latitude: 1.32, longitude: 103.82 }).expect(201);
+    await request(app)
+      .post('/api/locations')
+      .send({ latitude: 1.32, longitude: 103.82 })
+      .expect(201);
     const response = await request(app)
       .post('/api/locations')
       .send({ latitude: 1.32, longitude: 103.82 })
@@ -144,7 +151,10 @@ describe('locations API', () => {
 describe('SingaporeWeatherClient', () => {
   it('keeps other fields when the two-hour forecast payload is malformed', async () => {
     const client = new SingaporeWeatherClient();
-    vi.spyOn(client, 'fetchLatestForecastPayload').mockResolvedValue({ code: 0, data: { items: [] } } as never);
+    vi.spyOn(client, 'fetchLatestForecastPayload').mockResolvedValue({
+      code: 0,
+      data: { items: [] },
+    } as never);
     vi.spyOn(client, 'fetchTwentyFourHourForecast').mockRejectedValue(new Error('offline'));
     vi.spyOn(client, 'fetchNearestReading').mockImplementation(async (endpoint) => ({
       value: endpoint === 'air-temperature' ? 30 : null,

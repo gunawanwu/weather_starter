@@ -29,7 +29,9 @@ const glyph = (body: string) =>
 
 // CLOUD, SUN and WIND reuse the exact path data from icons.tsx so the map glyphs
 // match the icons used elsewhere in the app.
-const CLOUD = glyph('<path d="M7 18h10a4 4 0 0 0 .8-7.92A6 6 0 0 0 6.1 11.4 3.5 3.5 0 0 0 7 18Z"/>');
+const CLOUD = glyph(
+  '<path d="M7 18h10a4 4 0 0 0 .8-7.92A6 6 0 0 0 6.1 11.4 3.5 3.5 0 0 0 7 18Z"/>',
+);
 const SUN = glyph(
   '<circle cx="12" cy="12" r="4"/>' +
     '<path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',

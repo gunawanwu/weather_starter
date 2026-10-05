@@ -1,4 +1,12 @@
-export type ThemeId = 'apple' | 'aurora' | 'sunset' | 'ocean' | 'forest' | 'midnight' | 'storm' | 'tropical-storm';
+export type ThemeId =
+  | 'apple'
+  | 'aurora'
+  | 'sunset'
+  | 'ocean'
+  | 'forest'
+  | 'midnight'
+  | 'storm'
+  | 'tropical-storm';
 
 export interface Theme {
   id: ThemeId;

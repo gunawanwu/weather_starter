@@ -34,3 +34,17 @@ Single test file: `npx vitest run backend/src/routes/locations.test.ts`
 - [Database](docs/database.md) — schema, migrations, coordinate validation, duplicate handling
 - [External API](docs/external-api.md) — data.gov.sg v1/v2 quirks, rate limits, API key
 - [Testing](docs/testing.md) — test isolation model, temp database, parallelism
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on the fork `gunawanwu/weather_starter` (not `origin`, which is read-only). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `GLOSSARY.md` + `docs/adr/`, created lazily. See `docs/agents/domain.md`.
